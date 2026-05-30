@@ -27,7 +27,7 @@ SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
 
 # Order matters — this is the visual order in the email.
-SECTIONS = ["weather", "markets", "look_ahead"]
+SECTIONS = ["weather", "markets", "word_of_day", "look_ahead"]
 
 
 def _render_section(name: str) -> str:

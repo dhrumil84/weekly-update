@@ -1,0 +1,10 @@
+# Dependencies for the corpus fetcher scripts in scripts/.
+# NOT installed in CI — the weekly email pipeline only reads pre-fetched .txt files.
+# Install locally with: pip install -r requirements-dev.txt
+
+requests>=2.31
+beautifulsoup4>=4.12
+pdfplumber>=0.11
+# Berkshire's CDN serves letters with Content-Encoding: br regardless of
+# what Accept-Encoding the client requests. brotli lets requests auto-decode.
+brotli>=1.1
