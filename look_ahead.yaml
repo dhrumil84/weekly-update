@@ -1,0 +1,16 @@
+# Upcoming family events. Edit by hand; commit to git.
+# Schema:
+#   - date: YYYY-MM-DD     (required)
+#     title: short label   (required)
+#     notes: extra detail  (optional, one line)
+#
+# Events more than 90 days out are hidden until they fall inside the window.
+# Past events are auto-hidden the day after.
+
+- date: 2026-06-15
+  title: Mom & Dad anniversary
+  notes: Dinner reservation 7pm — replace this with real events
+
+- date: 2026-07-04
+  title: Independence Day BBQ
+  notes: Confirm who's hosting
