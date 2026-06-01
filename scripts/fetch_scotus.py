@@ -16,6 +16,9 @@ import requests
 from bs4 import BeautifulSoup
 
 from scripts._clean import normalize_text
+from scripts._env import load_dotenv
+
+load_dotenv()
 
 API_OPINIONS = "https://www.courtlistener.com/api/rest/v4/opinions/"
 API_PEOPLE   = "https://www.courtlistener.com/api/rest/v4/people/"
@@ -32,10 +35,15 @@ MAX_429_RETRIES = 6
 OUT_DIR = Path(__file__).resolve().parent.parent / "corpus" / "scotus"
 PER_JUSTICE = 20         # target per justice (some may have fewer matches)
 DATE_FROM = "2005-01-01"
-# Valid opinion type codes (035concurrence_in_part isn't a real enum member;
-# "in part" opinions are filed under the main 030/040 types).
-OPINION_TYPES = ["030concurrence", "040dissent"]
-SLEEP = 2.0
+# Note: CourtListener stores SCOTUS opinions as type "010combined" — one
+# record per case containing the full text (majority + any concurrences +
+# any dissents). Filtering by type=040dissent returns 0 for SCOTUS, so we
+# pull all combined opinions where this justice is the listed author
+# (which means they wrote the majority for that case). The resulting text
+# blob is rich, varied legal prose — perfect for vocabulary mining.
+# CourtListener throttles at 5 requests/min. 13s between calls keeps us
+# comfortably under that ceiling.
+SLEEP = 13.0
 
 # (last_name, courtlistener_person_id). Hardcoded after verifying each by
 # directly hitting /people/<id>/ — disambiguation via name lookup is too
@@ -64,9 +72,13 @@ def clean_scotus(text: str) -> str:
     if not text:
         return ""
 
-    # Trim everything before the first "JUSTICE X, [dissenting|concurring]..."
+    # Trim everything before the first opinion marker. Covers:
+    #   "JUSTICE ROBERTS delivered the opinion of the Court."
+    #   "CHIEF JUSTICE ROBERTS delivered ..."
+    #   "JUSTICE KAGAN, dissenting."
+    #   "JUSTICE THOMAS, concurring."
     m = re.search(
-        r"JUSTICE\s+[A-Z][A-Za-z]+(?:[^.]{0,200}?)(?:dissenting|concurring)",
+        r"(?:CHIEF\s+)?JUSTICE\s+[A-Z][A-Za-z]+(?:[^.]{0,200}?)(?:delivered|dissenting|concurring)",
         text,
     )
     if m:
@@ -140,43 +152,26 @@ def get_with_backoff(sess: requests.Session, url: str, params: dict) -> requests
 
 
 def fetch_one_justice(session: requests.Session, last_name: str, person_id: int, limit: int) -> list[str]:
-    """Return list of cleaned opinion texts for this justice across all opinion types."""
+    """Return up to `limit` cleaned combined-opinion texts where this justice was the author."""
+    params = {
+        "author": person_id,
+        "page_size": min(limit * 2, 50),
+    }
+    r = get_with_backoff(session, API_OPINIONS, params)
+    if r is None:
+        return []
+    results = r.json().get("results", [])
+    time.sleep(SLEEP)
 
-    seen_ids: set[int] = set()
     out: list[str] = []
-
-    for op_type in OPINION_TYPES:
+    for op in results:
+        raw = op.get("plain_text") or html_to_text(op.get("html_with_citations") or op.get("html") or "")
+        cleaned = clean_scotus(raw)
+        if len(cleaned) < 500:
+            continue
+        out.append(cleaned)
         if len(out) >= limit:
             break
-        params = {
-            "cluster__docket__court": "scotus",
-            "type": op_type,
-            "author": person_id,
-            "page_size": 50,
-        }
-        r = get_with_backoff(session, API_OPINIONS, params)
-        if r is None:
-            continue
-        results = r.json().get("results", [])
-        time.sleep(SLEEP)
-
-        for op in results:
-            if op.get("id") in seen_ids:
-                continue
-            seen_ids.add(op.get("id"))
-            # Optional date filter, client-side
-            cluster = op.get("cluster")
-            if isinstance(cluster, dict):
-                date_filed = cluster.get("date_filed", "")
-                if date_filed and date_filed < DATE_FROM:
-                    continue
-            raw = op.get("plain_text") or html_to_text(op.get("html_with_citations") or op.get("html") or "")
-            cleaned = clean_scotus(raw)
-            if len(cleaned) < 500:
-                continue
-            out.append(cleaned)
-            if len(out) >= limit:
-                break
     return out
 
 
