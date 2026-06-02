@@ -4,8 +4,8 @@ Sends a 7-day forecast for **Anaheim, CA** to `patel.dhrumil@protonmail.com` eve
 
 ## Files
 
-- `weather_email.py` — fetch + render + send (stdlib only, no dependencies)
-- `.github/workflows/weekly-weather.yml` — Sunday 9pm Pacific cron
+- `update.py` — build + send the weekly update email
+- `.github/workflows/weekly-update.yml` — Sunday 9pm Pacific cron
 - `.env.example` — template for local testing
 
 ## Setup
@@ -41,11 +41,11 @@ $env:SMTP_PASSWORD   = "your-app-password"
 $env:RECIPIENT_EMAIL = "patel.dhrumil@protonmail.com"
 
 # Preview the HTML without sending
-python weather_email.py --dry-run
+python update.py --dry-run
 start preview.html
 
 # Actually send a test email
-python weather_email.py
+python update.py
 ```
 
 > **Never commit `.env`.** It's gitignored. The plaintext password lives only on your machine and in GitHub Secrets (encrypted).
@@ -67,6 +67,6 @@ So the job runs directly at Sunday 9pm Pacific with no runtime guard needed.
 
 ## Customizing
 
-- **Location:** edit `LATITUDE`, `LONGITUDE`, `LOCATION_NAME` at the top of `weather_email.py`.
+- **Location:** edit `LATITUDE`, `LONGITUDE`, `LOCATION_NAME` at the top of `sections/weather.py`.
 - **Units:** Open-Meteo params `temperature_unit` and `wind_speed_unit` in `fetch_forecast()`.
 - **Send time:** change the cron line in the workflow.
