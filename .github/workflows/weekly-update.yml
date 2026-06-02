@@ -2,11 +2,9 @@ name: Weekly Update
 
 on:
   schedule:
-    # GitHub Actions cron is UTC and ignores DST.
-    # Sun 9pm Pacific = Mon 04:00 UTC (PDT) or Mon 05:00 UTC (PST).
-    # We schedule both; update.py's time guard makes sure only one actually sends.
-    - cron: "0 4 * * 1"
-    - cron: "0 5 * * 1"
+    # Run at Sunday 9:00 PM in Los Angeles time (DST handled automatically).
+    - cron: "0 21 * * 0"
+      timezone: "America/Los_Angeles"
   workflow_dispatch:
     inputs:
       force:
