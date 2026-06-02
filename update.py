@@ -4,9 +4,8 @@ Calls each section's render() to get an HTML fragment, wraps them in the master
 template, and sends via Gmail SMTP.
 
 Modes:
-  python update.py            # send (gated to Sun 8-10pm Pacific)
+  python update.py            # send
   python update.py --dry-run  # write preview.html, do not send
-  python update.py --force    # send regardless of day/time
   python update.py --only weather,markets  # render only listed sections
 """
 from __future__ import annotations
@@ -84,23 +83,11 @@ def send_email(html: str, *, sender: str, recipient: str, password: str) -> None
         s.send_message(msg)
 
 
-def is_target_time() -> bool:
-    """True if it's Sunday 8-10pm Pacific. Used to gate the dual-cron in CI."""
-    now = datetime.now(LOCAL_TZ)
-    return now.weekday() == 6 and 20 <= now.hour <= 22
-
-
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="Write preview.html, do not send")
-    ap.add_argument("--force", action="store_true", help="Skip the time-of-day guard")
     ap.add_argument("--only", help="Comma-separated section names to render (default: all)")
     args = ap.parse_args()
-
-    if not args.dry_run and not args.force and not is_target_time():
-        now = datetime.now(LOCAL_TZ)
-        print(f"Skip: not Sun 8-10pm Pacific (now: {now:%a %H:%M %Z}). Use --force to override.")
-        return 0
 
     only = [s.strip() for s in args.only.split(",")] if args.only else None
     print(f"Building email (sections: {only or SECTIONS})...")

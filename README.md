@@ -44,8 +44,8 @@ $env:RECIPIENT_EMAIL = "patel.dhrumil@protonmail.com"
 python weather_email.py --dry-run
 start preview.html
 
-# Actually send a test email (bypasses the Sunday-9pm guard)
-python weather_email.py --force
+# Actually send a test email
+python weather_email.py
 ```
 
 > **Never commit `.env`.** It's gitignored. The plaintext password lives only on your machine and in GitHub Secrets (encrypted).
@@ -58,15 +58,15 @@ After pushing to GitHub:
 
 ## How the scheduling works
 
-GitHub Actions cron is **UTC-only** and does not observe DST. Sun 9pm Pacific is:
+GitHub Actions cron now supports an explicit timezone in this workflow:
 
-- Mon 04:00 UTC during **PDT** (mid-March → early November)
-- Mon 05:00 UTC during **PST** (early November → mid-March)
+- `timezone: America/Los_Angeles`
+- `cron: 0 21 * * 0`
 
-The workflow schedules **both** times. The script then checks: "is it actually Sunday 8–10pm in America/Los_Angeles right now?" Only one of the two runs will pass the check, so you get exactly one email per week with no manual DST adjustments.
+So the job runs directly at Sunday 9pm Pacific with no runtime guard needed.
 
 ## Customizing
 
 - **Location:** edit `LATITUDE`, `LONGITUDE`, `LOCATION_NAME` at the top of `weather_email.py`.
 - **Units:** Open-Meteo params `temperature_unit` and `wind_speed_unit` in `fetch_forecast()`.
-- **Send time:** change the two cron lines in the workflow and the `is_target_time()` window.
+- **Send time:** change the cron line in the workflow.

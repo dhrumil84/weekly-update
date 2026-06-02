@@ -7,10 +7,6 @@ on:
       timezone: "America/Los_Angeles"
   workflow_dispatch:
     inputs:
-      force:
-        description: "Send regardless of day/time"
-        type: boolean
-        default: true
       only:
         description: "Comma-separated section names (blank = all)"
         type: string
@@ -33,6 +29,5 @@ jobs:
           RECIPIENT_EMAIL: patel.dhrumil@protonmail.com
         run: |
           ARGS=""
-          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
           if [ -n "${{ inputs.only }}" ]; then ARGS="$ARGS --only ${{ inputs.only }}"; fi
           python update.py $ARGS
