@@ -101,6 +101,17 @@ def main() -> int:
         try:
             r = sess.get(url, timeout=60)
             r.raise_for_status()
+        except requests.HTTPError as e:
+            print(f"  ERROR: {e}", file=sys.stderr)
+            if e.response is not None and e.response.status_code == 404 and target.count("/") < 2:
+                print(
+                    "  HINT: this looks like a 2-part slug. Translated works on Standard\n"
+                    "        Ebooks include the translator as a third segment, e.g.\n"
+                    "        'friedrich-nietzsche/the-genealogy-of-morals/horace-b-samuel'.\n"
+                    "        Find the full URL on the book's page and pass that instead.",
+                    file=sys.stderr,
+                )
+            continue
         except Exception as e:
             print(f"  ERROR: {e}", file=sys.stderr)
             continue
